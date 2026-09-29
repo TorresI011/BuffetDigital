@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Buffet Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="dns-prefetch" href="//images.unsplash.com">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Se aplica el tema antes de pintar para evitar el parpadeo blanco
+    (function () {
+      try {
+        var t = localStorage.getItem('tema');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+        if (t === 'oscuro') document.documentElement.setAttribute('data-tema', 'oscuro');
+      } catch (e) {}
+    })();
+  </script>
+</head>
+
+<body>
+
+<!-- BARRA SUPERIOR -->
+<div class="barra-superior">
+  <div class="bloque-izquierdo">
+    <h1 class="brand-name" onclick="volverAlInicio()">Buffet Digital</h1>
+    <div class="selector-ubicacion" onclick="abrirModal('modalUbicacion')">
+      <span class="ubicacion-label">Entregar en 📍</span>
+      <span id="txtUbicacion" class="ubicacion-actual">Medellín, Envigado</span>
+    </div>
+  </div>
+  <div class="contenedor-buscador">
+    <input type="text" id="inputBuscador" class="input-buscador"
+           placeholder="Busca un plato, una categoría o un ingrediente…"
+           oninput="buscar(this.value)" autocomplete="off">
+  </div>
+  <div class="bloque-derecho">
+    <button class="boton-carrito" onclick="verCarrito()">
+      🛒 <span id="txtCarrito">Carrito (0)</span>
+    </button>
+    <div class="menu-usuario-dropdown">
+      <button id="btnAuthTrigger" class="boton-user-trigger" onclick="gestionarClicAuth()">Ingresar</button>
+      <div id="dropdownUsuario" class="dropdown-contenido">
+        <a onclick="abrirPerfil()">Mi perfil</a>
+        <a id="enlaceAdmin" onclick="abrirPanelAdmin()" style="display:none;">Panel administrador</a>
+        <a onclick="cerrarSesion()">Cerrar sesión</a>
+      </div>
+    </div>
+    <button id="btnTema" class="boton-tema" onclick="alternarTema()" aria-label="Cambiar a modo oscuro" title="Modo oscuro">🌙</button>
+    <button class="boton-sidebar-trigger" onclick="toggleSidebar()" aria-label="Abrir menú">☰</button>
+  </div>
+</div>
+
+<!-- OVERLAY SIDEBAR -->
+<div id="overlaySidebar" class="overlay-sidebar" onclick="cerrarSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebarDerecha" class="sidebar-derecha">
+  <div class="sidebar-header">
+    <span class="sidebar-brand">Buffet Digital</span>
+    <span class="sidebar-cerrar" onclick="cerrarSidebar()">&times;</span>
+  </div>
+
+  <div class="sidebar-perfil" id="sidebarPerfil"></div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-item destacado" onclick="abrirArmador(); cerrarSidebar();"><span>Arma tu plato</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarFavoritos(); cerrarSidebar();"><span>♥ Mis recetas</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('asiatico'); cerrarSidebar();"><span id="navCatAsiatico">Asiático</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('oriental'); cerrarSidebar();"><span id="navCatOriental">Oriental</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('europeo'); cerrarSidebar();"><span id="navCatEuropeo">Europeo</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('latino'); cerrarSidebar();"><span id="navCatLatino">Latinoamericano</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('rapido'); cerrarSidebar();"><span id="navCatRapido">Rápido</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('vegetariano'); cerrarSidebar();"><span id="navCatVegetariano">Vegetariano</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarPlatos('vegano'); cerrarSidebar();"><span id="navCatVegano">Vegano</span></div>
+    <div class="sidebar-nav-item" onclick="mostrarSubcategoriasBebidas(); cerrarSidebar();"><span>Bebidas</span></div>
+
+    <div class="sidebar-nav-item sidebar-otros" onclick="toggleOtros()">
+      <span>Otros</span>
+      <span id="flechaOtros" class="sidebar-flecha">›</span>
+    </div>
+    <div id="submenuOtros" class="sidebar-submenu">
+      <div class="sidebar-subitem" onclick="alert('Próximamente: registro de restaurantes.')">Registra tu restaurante</div>
+      <div class="sidebar-subitem" onclick="alert('Próximamente: registro de repartidores.')">Quiero ser repartidor</div>
+    </div>
+  </nav>
+
+  <div class="sidebar-tema" onclick="alternarTema()">
+    <span id="txtTemaSidebar">Modo oscuro</span>
+    <span class="sidebar-flecha">›</span>
+  </div>
+
+  <div class="sidebar-ubicacion" onclick="abrirModal('modalUbicacion')">
+    <span class="sidebar-ubicacion-label">📍 Entregar en</span>
+    <span id="txtUbicacionSidebar" class="sidebar-ubicacion-actual">Medellín, Envigado</span>
+  </div>
+</aside>
+
+<!-- MODAL: DIRECCIÓN -->
+<div id="modalUbicacion" class="fondo-modal">
+  <div class="modal-contenido">
+    <span class="cerrar-x" onclick="cerrarModal('modalUbicacion')">&times;</span>
+    <h3>Ingresa tu dirección</h3>
+    <p class="modal-nota">Elige tu zona para consultar disponibilidad y calcular el envío.</p>
+    <label class="campo-ubicacion">Zona de entrega
+      <select id="selectZonaEntrega" onchange="actualizarZonaEntrega()">
+        <option value="">Selecciona una zona</option>
+        <option value="envigado">Envigado</option>
+        <option value="medellin">Medellín</option>
+        <option value="sabaneta">Sabaneta</option>
+        <option value="bello">Bello</option>
+        <option value="rionegro">Rionegro</option>
+      </select>
+    </label>
+    <div id="estadoZonaEntrega" class="estado-zona-entrega" aria-live="polite">Selecciona una zona para continuar.</div>
+    <input type="text" id="inputCiudad" placeholder="Ej: Medellín, Envigado" value="Medellín, Envigado">
+    <input type="text" id="inputDireccion" placeholder="Ej: Calle 37 Sur #43A-12, Apto 502">
+    <button class="boton-bloque" onclick="guardarUbicacion()">Confirmar dirección</button>
+  </div>
+</div>
+
+<!-- MODAL: AUTH -->
+<div id="modalAuth" class="fondo-modal">
+  <div class="modal-contenido">
+    <span class="cerrar-x" onclick="cerrarModal('modalAuth')">&times;</span>
+    <div id="vistaLogin">
+      <h3>Iniciar sesión</h3>
+      <input type="email" id="loginCorreo" placeholder="Correo electrónico">
+      <input type="password" id="loginPass" placeholder="Contraseña">
+      <button class="boton-bloque" onclick="procesarLogin()">Ingresar</button>
+      <p class="texto-cambio">¿Eres nuevo? <span onclick="cambiarVistaAuth('registro')">Regístrate aquí</span></p>
+    </div>
+    <div id="vistaRegistro" style="display:none;">
+      <h3>Crear cuenta</h3>
+      <input type="text" id="regNombre" placeholder="Nombre">
+      <input type="email" id="regCorreo" placeholder="Correo electrónico">
+      <input type="password" id="regPass" placeholder="Contraseña">
+      <button class="boton-bloque" onclick="procesarRegistro()">Crear cuenta</button>
+      <p class="texto-cambio">¿Ya tienes cuenta? <span onclick="cambiarVistaAuth('login')">Inicia sesión</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PERFIL -->
+<div id="modalPerfil" class="fondo-modal">
+  <div class="modal-contenido">
+    <span class="cerrar-x" onclick="cerrarModal('modalPerfil')">&times;</span>
+    <h3>Mi perfil</h3>
+    <div class="perfil-info">
+      <p><strong>Nombre:</strong> <span id="perfilNombre">-</span></p>
+      <p><strong>Correo:</strong> <span id="perfilCorreo">-</span></p>
+    </div>
+    <button class="boton-bloque" onclick="cerrarModal('modalPerfil')">Entendido</button>
+  </div>
+</div>
+
+<!-- MODAL: CARRITO -->
+<div id="modalCarrito" class="fondo-modal">
+  <div class="modal-contenido modal-carrito">
+    <span class="cerrar-x" onclick="cerrarModal('modalCarrito')">&times;</span>
+    <div class="carrito-cabecera"><div><span class="carrito-kicker">TU PEDIDO</span><h3>Tu carrito</h3></div><span id="contadorCarritoModal" class="carrito-contador">0 productos</span></div>
+    <div id="listaCarrito"></div>
+    <div id="resumenCarrito" class="carrito-resumen"></div>
+    <div class="carrito-entrega"><div class="carrito-entrega-cab"><strong>Entrega</strong><button class="carrito-link" onclick="cerrarModal('modalCarrito'); abrirModal('modalUbicacion')">Editar dirección</button></div><div id="direccionCarrito" class="carrito-direccion">Agrega una dirección para calcular el envío.</div></div>
+    <label class="carrito-pago"><span>Método de pago</span><select id="metodoPago"><option value="contraentrega">Pago contra entrega</option><option value="transferencia">Transferencia bancaria</option><option value="tarjeta">Tarjeta al recibir</option></select></label>
+    <button class="boton-bloque" onclick="cerrarModal('modalCarrito')">Seguir comprando</button>
+    <button id="btnConfirmarPedido" class="boton-bloque oscuro" onclick="finalizarPedido()">Confirmar pedido</button>
+  </div>
+</div>
+
+<!-- 1. INICIO -->
+<div id="inicio" class="portada">
+  <h1 class="titulo">Buffet Digital</h1>
+  <p class="subtitulo">Tú decides qué lleva tu plato, ingrediente por ingrediente</p>
+  <div class="portada-acciones">
+    <button class="boton principal" onclick="abrirArmador()">Arma tu plato</button>
+    <button class="boton" onclick="irACategorias()">Ver el menú</button>
+  </div>
+</div>
+
+<!-- 2. CATEGORÍAS -->
+<div id="categorias" class="seccion-categorias">
+  <h1>¿Qué se te antoja hoy?</h1>
+  <p class="seccion-sub">Empieza desde cero o toma un plato de la carta y ajústalo a tu gusto</p>
+  <div class="contenedor-grid" id="gridCategorias"></div>
+  <button class="boton" onclick="volverAlInicio()">Volver al inicio</button>
+</div>
+
+<!-- 2b. SUBCATEGORÍAS DE BEBIDAS -->
+<div id="subBebidas" class="seccion-categorias">
+  <h1>Bebidas</h1>
+  <p class="seccion-sub">Selecciona el tipo de bebida</p>
+  <div class="contenedor-grid">
+    <div class="tarjeta-categoria img-bebidas-asiaticas" onclick="mostrarPlatos('bebidasAsiaticas')"><span>Bebidas asiáticas</span><small>Infusiones y sabores de Asia</small></div>
+    <div class="tarjeta-categoria img-bebidas-americanas" onclick="mostrarPlatos('bebidasAmericanas')"><span>Bebidas americanas</span><small>Jugos y cafés frescos</small></div>
+    <div class="tarjeta-categoria img-bebidas-europeas" onclick="mostrarPlatos('bebidasEuropeas')"><span>Bebidas europeas</span><small>Cafés y tés clásicos</small></div>
+    <div class="tarjeta-categoria img-bebidas-gaseosas" onclick="mostrarPlatos('bebidasGaseosas')"><span>Gaseosas y frías</span><small>Refrescantes para acompañar</small></div>
+  </div>
+  <button class="boton" onclick="volverACategorias()">Volver a categorías</button>
+</div>
+
+<!-- 3. LISTADO DE PLATOS (se renderiza desde JS) -->
+<div id="menu" class="menu"></div>
+
+<!-- 4. BÚSQUEDA -->
+<div id="pantallaBusqueda" class="pantalla-busqueda"></div>
+
+<!-- 4a. FAVORITOS Y RECETAS GUARDADAS -->
+<div id="favoritos" class="pantalla-favoritos"></div>
+
+<!-- 4b. PANEL DE ADMINISTRACIÓN -->
+<div id="panelAdmin" class="panel-admin"></div>
+
+<!-- 5. DETALLE / EDICIÓN DE UNA RECETA -->
+<div id="detalleRender" class="pantalla-detalle"></div>
+
+<!-- 6. ARMADOR DE PLATO -->
+<div id="armador" class="pantalla-armador"></div>
+
+<!-- BARRA INFERIOR -->
+<div id="barraAgregar" class="barra-agregar">
+  <div class="barra-agregar-interior">
+    <div class="control-cantidad">
+      <button class="btn-cantidad" onclick="cambiarCantidad(-1)">−</button>
+      <span class="txt-cantidad" id="txtCantidad">1</span>
+      <button class="btn-cantidad" onclick="cambiarCantidad(1)">+</button>
+    </div>
+    <button class="btn-agregar-carrito" onclick="agregarAlCarrito()">
+      <span>Agregar al carrito</span>
+      <span class="total-carrito" id="txtTotalBarra">$0</span>
+    </button>
+  </div>
+</div>
+
+<div id="contenedorToasts" class="contenedor-toasts" aria-live="polite" aria-atomic="true"></div>
+
+<!-- El orden importa: cada archivo puede usar datos/funciones definidos en los anteriores -->
+<script src="js/01-catalogo.js"></script>
+<script src="js/02-estado.js"></script>
+<script src="js/03-precios.js"></script>
+<script src="js/04-navegacion.js"></script>
+<script src="js/05-pantalla-receta.js"></script>
+<script src="js/06-bloques.js"></script>
+<script src="js/07-armador.js"></script>
+<script src="js/08-carrito.js"></script>
+<script src="js/09-busqueda.js"></script>
+<script src="js/10-admin.js"></script>
+<script src="js/11-interfaz.js"></script>
+<script src="js/12-auth.js"></script>
+<script src="js/13-tema.js"></script>
+<script src="js/14-arranque.js"></script>
+</body>
+</html>
